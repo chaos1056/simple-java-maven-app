@@ -1,26 +1,8 @@
 pipeline {
     agent any
-    environment {
-        MAVEN_HOME = "${WORKSPACE}/apache-maven-3.9.9"
-        PATH = "${WORKSPACE}/apache-maven-3.9.9/bin:$PATH"
+    options {
+        skipStagesAfterUnstable()
     }
-    stages {
-        stage("Clean Up") {
-            steps {
-                deleteDir()
-            }
-        }
-        stage("Install Maven 3.9.9") {
-            steps {
-                sh '''
-                  echo "Downloading Maven 3.9.9..."
-                  curl -sSL https://archive.apache.org/dist/maven/maven-3/3.9.9/binaries/apache-maven-3.9.9-bin.tar.gz \
-                  | tar -xz -C $WORKSPACE
-                  echo "Maven installed at $WORKSPACE/apache-maven-3.9.9"
-                '''
-                sh "$WORKSPACE/apache-maven-3.9.9/bin/mvn -v"
-            }
-        }
     stages {
         stage('Build') {
             steps {
