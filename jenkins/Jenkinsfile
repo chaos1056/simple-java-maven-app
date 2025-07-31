@@ -3,30 +3,60 @@ pipeline {
     options {
         skipStagesAfterUnstable()
     }
+    environment {
+        MAVEN_HOME = "${WORKSPACE}/apache-maven-3.9.9"
+        PATH = "${WORKSPACE}/apache-maven-3.9.9/bin:$PATH"
+    }
     stages {
-        stage('Build') {
+        stage("Clean Up") {
             steps {
-                sh 'mvn -B -DskipTests clean package'
+                deleteDir()
             }
         }
-        stage('Test') {
+        stage("Install Maven 3.9.9") {
             steps {
-                sh 'mvn test'
+                sh '''
+                  echo "Downloading Maven 3.9.9..."
+                  curl -sSL https://archive.apache.org/dist/maven/maven-3/3.9.9/binaries/apache-maven-3.9.9-bin.tar.gz \
+                  | tar -xz -C "$WORKSPACE"
+                '''
+                sh "\"$WORKSPACE/apache-maven-3.9.9/bin/mvn\" -v"
             }
-            post {
-                always {
-                    junit 'target/surefire-reports/*.xml'
+        }
+        stage("Clone Repo") {
+            steps {
+                sh "git clone https://github.com/jenkins-docs/simple-java-maven-app.git simple-java-maven-app"
+            }
+        }
+        stage("Build") {
+            steps {
+                dir("simple-java-maven-app") {
+                    sh 'mvn -B -DskipTests clean package'
                 }
             }
         }
-        stage('Deliver') { 
+        stage("Test") {
             steps {
-                sh './jenkins/scripts/deliver.sh' 
+                dir("simple-java-maven-app") {
+                    sh 'mvn test'
+                }
+            }
+            post {
+                always {
+                    junit 'simple-java-maven-app/target/surefire-reports/*.xml'
+                }
             }
         }
-        stage('Complete') { 
+        stage("Deliver") {
             steps {
-                echo 'Job Complete!' 
+                dir("simple-java-maven-app") {
+                    sh './jenkins/scripts/deliver.sh'
+                }
+            }
+        }
+        stage("Complete") {
+            steps {
+                echo 'Job Complete!'
             }
         }
     }
